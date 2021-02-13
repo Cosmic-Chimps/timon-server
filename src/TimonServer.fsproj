@@ -1,0 +1,66 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DefineConstants>TRACE;LOCAL</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FSharp.Core" Version="5.0.1" />
+    <PackageReference Include="FSharp.Json" Version="0.4.0" />
+    <PackageReference Include="SchlenkR.FsHttp" Version="5.0.0" />
+    <PackageReference Include="System.Runtime" Version="4.3.1" Force="true" />
+    <PackageReference Include="Dapper.FSharp" Version="1.15.0" />
+    <PackageReference Include="FluentMigrator" Version="3.2.11" />
+    <PackageReference Include="FluentMigrator.Runner" Version="3.2.11" />
+    <PackageReference Include="FluentMigrator.Runner.Postgres" Version="3.2.11" />
+    <PackageReference Include="FSharp.Data" Version="3.3.3" />
+    <PackageReference Include="Giraffe" Version="4.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
+    <PackageReference Include="Npgsql" Version="5.0.3" />
+    <PackageReference Include="OpenGraph-Net" Version="3.2.6" />
+    <PackageReference Include="SQLProvider" Version="1.1.101" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Migrations\202008091339_InitialMigration.fs" />
+    <Compile Include="Migrations\202008092104_AddEmailToUser.fs" />
+    <Compile Include="Migrations\202008271402_CreateTableTags.fs" />
+    <Compile Include="Migrations\202009012226_AddColumnTagToLink.fs" />
+    <Compile Include="Migrations\202009012352_AlterColumnTagCount.fs" />
+    <Compile Include="Migrations\202009030115_AlterLinkTags.fs" />
+    <Compile Include="Migrations\202009262231_CreateClubLinkTags.fs" />
+    <Compile Include="Migrations\202011232241_AddClubFlagPrivate.fs" />
+    <Compile Include="DbProvider.fs" />
+    <Compile Include="BackgroundActor.fs" />
+    <Compile Include="HandlerHelpers.fs" />
+    <Compile Include="LinkGetHandler.fs" />
+    <Compile Include="LinkPostHandler.fs" />
+    <Compile Include="ChannelPostHandler.fs" />
+    <Compile Include="ChannelGetHandler.fs" />
+    <Compile Include="UserPostHandler.fs" />
+    <Compile Include="ClubHandler.fs" />
+    <Compile Include="FunctionHandler.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+  <Content Include="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="appsettings.Production.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="appsettings.Staging.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="localhost2.crt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+</Project>
