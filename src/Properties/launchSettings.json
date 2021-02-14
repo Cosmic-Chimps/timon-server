@@ -5,7 +5,7 @@
       "commandName": "Project",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "ASPNETCORE_URLS":"http://localhost:5004;https://localhost:5005",
+        "ASPNETCORE_URLS": "http://localhost:5004",
         "IDENTITY_AUTHORITY": "https://localhost:5001"
       }
     }

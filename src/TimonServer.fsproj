@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
@@ -8,7 +8,6 @@
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DefineConstants>TRACE;LOCAL</DefineConstants>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="FSharp.Core" Version="5.0.1" />
     <PackageReference Include="FSharp.Json" Version="0.4.0" />
@@ -26,8 +25,8 @@
     <PackageReference Include="Npgsql" Version="5.0.3" />
     <PackageReference Include="OpenGraph-Net" Version="3.2.6" />
     <PackageReference Include="SQLProvider" Version="1.1.101" />
+    <PackageReference Include="Dapr.AspNetCore" Version="1.0.0-rc06" />
   </ItemGroup>
-
   <ItemGroup>
     <Compile Include="Migrations\202008091339_InitialMigration.fs" />
     <Compile Include="Migrations\202008092104_AddEmailToUser.fs" />
@@ -46,11 +45,11 @@
     <Compile Include="ChannelGetHandler.fs" />
     <Compile Include="UserPostHandler.fs" />
     <Compile Include="ClubHandler.fs" />
+    <Compile Include="PubSubController.fs" />
     <Compile Include="FunctionHandler.fs" />
   </ItemGroup>
-
   <ItemGroup>
-  <Content Include="appsettings.json">
+    <!-- <Content Include="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="appsettings.Production.json">
@@ -58,7 +57,7 @@
     </Content>
     <Content Include="appsettings.Staging.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    </Content> -->
     <Content Include="localhost2.crt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
