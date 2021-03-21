@@ -5,6 +5,14 @@ open Microsoft.Extensions.Configuration
 open Giraffe
 open System.Linq
 open System
+open DbProvider
+open System.Text.RegularExpressions
+open FSharp.Json
+open System.Security.Cryptography
+open Microsoft.AspNetCore.DataProtection
+open Password
+open System.Collections.Generic
+open System.Text.Json
 
 let getDbCtx (ctx: HttpContext) =
     ctx.GetService<IConfiguration>()
@@ -13,25 +21,33 @@ let getDbCtx (ctx: HttpContext) =
 
 let getUserId (ctx: HttpContext) =
     let userIdentity = ctx.User
-    let timonUserClaim = userIdentity.Claims.FirstOrDefault(fun (x) -> x.Type = "timonUser")
+
+    let timonUserClaim =
+        userIdentity.Claims.FirstOrDefault(fun x -> x.Type = "timonUser")
+
     Guid.Parse(timonUserClaim.Value)
 
-let allowUserInClub (ctx: HttpContext) (clubId: Guid) =
+let isUserAllowedInClub (ctx: HttpContext) (clubId: Guid) =
     let dbCtx = getDbCtx ctx
     let userId = getUserId ctx
 
     let exists =
         query {
             for clubUser in dbCtx.Public.ClubUsers do
-            where (clubUser.ClubId = clubId && clubUser.UserId = userId)
-            select 1
-        } |> Seq.tryHead
+                where (
+                    clubUser.ClubId = clubId
+                    && clubUser.UserId = userId
+                )
+
+                select 1
+        }
+        |> Seq.tryHead
 
     match exists with
     | Some _ -> true
     | None -> false
 
-let allowChannelInClub (ctx: HttpContext) (channelId: Guid) (clubId: Guid) =
+let isChannelInClub (ctx: HttpContext) (channelId: Guid) (clubId: Guid) =
     match channelId with
     | test when test = Guid.Empty -> true
     | _ ->
@@ -41,10 +57,256 @@ let allowChannelInClub (ctx: HttpContext) (channelId: Guid) (clubId: Guid) =
         let exists =
             query {
                 for channel in dbCtx.Public.Channels do
-                where (channel.Id = channelId && channel.ClubId = clubId)
-                select 1
-            } |> Seq.tryHead
+                    where (
+                        channel.Id = channelId
+                        && channel.ClubId = clubId
+                    )
+
+                    select 1
+            }
+            |> Seq.tryHead
 
         match exists with
         | Some _ -> true
         | None -> false
+
+[<CLIMutable>]
+type RegisterActivityPubRequest =
+    { Username: string
+      Password: string
+      VerifyPassword: string
+      Email: string
+      Redirect: string }
+
+let encryptPassword (ctx: HttpContext) (value: string) =
+    let internalTimonKeyValueProtection =
+        ctx.GetService<IConfiguration>()
+        |> (fun s -> s.["InternalTimonKeyValueProtection"])
+
+    let protectionProvider =
+        ctx.GetService<IDataProtectionProvider>()
+
+    let protector =
+        protectionProvider.CreateProtector(internalTimonKeyValueProtection)
+
+    protector.Protect(value)
+
+let decryptPassword (ctx: HttpContext) (value: string) =
+    let internalTimonKeyValueProtection =
+        ctx.GetService<IConfiguration>()
+        |> (fun s -> s.["InternalTimonKeyValueProtection"])
+
+    let protectionProvider =
+        ctx.GetService<IDataProtectionProvider>()
+
+    let protector =
+        protectionProvider.CreateProtector(internalTimonKeyValueProtection)
+
+    protector.Unprotect(value)
+
+let generateSlug (value: string) =
+    let temp =
+        value
+            .ToLower()
+            .Substring(0, Math.Min(value.Length, 40))
+
+    let temp1 = Regex.Replace(temp, @"[^a-z0-9\s-]", "")
+    let temp2 = Regex.Replace(temp1, @"\s+", " ")
+    Regex.Replace(temp2, @"\s", "-")
+
+
+let registerChannelActivityPub
+    (ctx: HttpContext)
+    (club: Club)
+    (channel: Channel)
+    =
+    let daprClient = ctx.GetService<Dapr.Client.DaprClient>()
+
+    let channelSlug = generateSlug channel.Name
+    let clubSlug = generateSlug club.Name
+
+    let activityPubDomain =
+        ctx.GetService<IConfiguration>()
+        |> (fun s -> s.["AcitivityPubDomain"])
+
+    let password = PasswordGenerator.genPass 10
+
+    let username = $"{channelSlug}-{clubSlug}"
+
+    let payload =
+        { Username = username
+          Password = password
+          VerifyPassword = password
+          Email = $"{channelSlug}-{clubSlug}@{activityPubDomain}"
+          Redirect = String.Empty }
+
+    let request =
+        daprClient.CreateInvokeMethodRequest<RegisterActivityPubRequest>(
+            "timon-activity-pub",
+            "message-bus/register-channel-activitypub",
+            payload
+        )
+
+    let registered =
+        daprClient.InvokeMethodWithResponseAsync(request)
+        |> Async.AwaitTask
+        |> Async.RunSynchronously
+
+    match registered.StatusCode with
+    | System.Net.HttpStatusCode.Created ->
+        let dbCtx = getDbCtx ctx
+
+        let activityPubUserId = registered.Headers.Location
+
+        let encryptedPassword = encryptPassword ctx password
+
+        let channelActivityPub = dbCtx.Public.ChannelActivityPub.Create()
+        channelActivityPub.ChannelId <- channel.Id
+        channelActivityPub.Password <- encryptedPassword
+        channelActivityPub.Username <- username
+        channelActivityPub.ActivityPubId <- activityPubUserId.ToString()
+
+        saveDatabase dbCtx
+        |> Async.RunSynchronously
+
+        ()
+    | _ -> raise (Failure "Error registerChannelActivityPub")
+
+
+[<CLIMutable>]
+type LoginActivityPubRequest =
+    { Username: string
+      Password: string
+      Redirect: string }
+
+[<CLIMutable>]
+type LoginActivityPubResponse = { Token: string }
+
+let getChannelActivityPub (dbCtx: DbProvider.Sql.dataContext) channelId =
+    query {
+        for t in dbCtx.Public.ChannelActivityPub do
+            where (t.ChannelId = channelId)
+    }
+    |> Seq.head
+
+let getChannelActivityPubToken (ctx: HttpContext) (channel: Channel) =
+    let daprClient = ctx.GetService<Dapr.Client.DaprClient>()
+
+    let dbCtx = getDbCtx ctx
+
+    let channelActivityPub = getChannelActivityPub dbCtx channel.Id
+
+    let decryptedPassword =
+        decryptPassword ctx channelActivityPub.Password
+
+    let payload =
+        { Username = channelActivityPub.Username
+          Password = decryptedPassword
+          Redirect = String.Empty }
+
+    let request =
+        daprClient.CreateInvokeMethodRequest<LoginActivityPubRequest>(
+            "timon-activity-pub",
+            "message-bus/login-channel-activitypub",
+            payload
+        )
+
+    daprClient.InvokeMethodAsync<LoginActivityPubResponse>(request)
+    |> Async.AwaitTask
+    |> Async.RunSynchronously
+
+let proxyCall
+    (ctx: HttpContext)
+    (tokenResponse: LoginActivityPubResponse)
+    (channel: Channel)
+    (followUserId: string)
+    =
+    let daprClient = ctx.GetService<Dapr.Client.DaprClient>()
+
+    let requestProxy =
+        daprClient.CreateInvokeMethodRequest("timon-activity-pub", "auth/proxy")
+
+    // requestProxy.Headers.Add(
+    //     "Content-Type",
+    //     "application/x-www-form-urlencoded;charset=UTF-8"
+    // )
+    // |> ignore
+
+    requestProxy.Headers.Add(
+        "Accept",
+        "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\", application/activity+json"
+    )
+    |> ignore
+
+    requestProxy.Headers.Add("Authorization", $"Bearer {tokenResponse.Token}")
+    |> ignore
+
+    let contentBody : KeyValuePair<string, string> array =
+        [| new KeyValuePair<string, string>("id", followUserId) |]
+
+    requestProxy.Content <-
+        new System.Net.Http.FormUrlEncodedContent(contentBody)
+
+    daprClient.InvokeMethodWithResponseAsync(requestProxy)
+    |> Async.AwaitTask
+    |> Async.RunSynchronously
+
+
+[<CLIMutable>]
+type ActivityPubRequest =
+    { [<System.Text.Json.Serialization.JsonPropertyName("@context")>]
+      Context: string array
+      Type: string array
+      Actor: string array
+      Object: string array
+      To: string array }
+
+let followUser (ctx: HttpContext) (channel: Channel) (followUserId: string) =
+    let dbCtx = getDbCtx ctx
+
+    let tokenResponse = getChannelActivityPubToken ctx channel
+
+    proxyCall ctx tokenResponse channel followUserId
+    |> ignore
+
+    let channelActivityPub = getChannelActivityPub dbCtx channel.Id
+
+    let daprClient = ctx.GetService<Dapr.Client.DaprClient>()
+
+    let tokenResponse = getChannelActivityPubToken ctx channel
+
+    let payload =
+        { Context = [| "https://www.w3.org/ns/activitystreams" |]
+          Type = [| "Follow" |]
+          Actor = [| channelActivityPub.ActivityPubId |]
+          Object = [| followUserId |]
+          To = [| followUserId |] }
+
+    let requestProxy =
+        daprClient.CreateInvokeMethodRequest<ActivityPubRequest>(
+            "timon-activity-pub",
+            $"users/{channelActivityPub.Username}/outbox",
+            payload
+        )
+
+    // requestProxy.Headers.Add(
+    //     "Content-Type",
+    //     "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""
+    // )
+    // |> ignore
+
+    requestProxy.Headers.Add(
+        "Accept",
+        "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\", application/activity+json"
+    )
+    |> ignore
+
+    requestProxy.Headers.Add("Authorization", $"Bearer {tokenResponse.Token}")
+    |> ignore
+
+    let resp =
+        daprClient.InvokeMethodWithResponseAsync(requestProxy)
+        |> Async.AwaitTask
+        |> Async.RunSynchronously
+
+    resp.IsSuccessStatusCode

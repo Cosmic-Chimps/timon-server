@@ -18,13 +18,23 @@ type SubscribeClubPayload = { id: Guid; name: string }
 [<CLIMutable>]
 type UnSubscribeClubPayload = { id: Guid; name: string }
 
-type MembersView = { displayName: string }
+type ClubMembersView = { DisplayName: string }
 
 type ClubView =
-    { id: Guid
-      name: string
-      isPublic: bool }
+    { Id: Guid
+      Name: string
+      IsPublic: bool }
 
+
+let findClubByName (dbCtx: DbProvider.Sql.dataContext) name =
+    async {
+        return!
+            query {
+                for club in dbCtx.Public.Clubs do
+                    where (club.Name = name)
+            }
+            |> Seq.tryHeadAsync
+    }
 
 let createClub (dbCtx: DbProvider.Sql.dataContext) (payload: PostClubPayload) =
     async {
@@ -32,44 +42,61 @@ let createClub (dbCtx: DbProvider.Sql.dataContext) (payload: PostClubPayload) =
         club.Name <- payload.name
         club.DateCreated <- DateTime.UtcNow
         club.IsPublic <- not payload.isProtected
+
         DbProvider.saveDatabase dbCtx
         |> Async.RunSynchronously
+
         return club
     }
 
-let addUserToClub (dbCtx: DbProvider.Sql.dataContext) (userId: Guid) (clubId: Guid) =
+let addUserToClub
+    (dbCtx: DbProvider.Sql.dataContext)
+    (userId: Guid)
+    (clubId: Guid)
+    =
     async {
         let! exists =
             query {
                 for clubUser in dbCtx.Public.ClubUsers do
-                    where
-                        (clubUser.UserId = userId
-                         && clubUser.ClubId = clubId)
+                    where (
+                        clubUser.UserId = userId
+                        && clubUser.ClubId = clubId
+                    )
+
                     select 1
             }
             |> Seq.tryHeadAsync
 
-        return match exists with
-               | Some _ -> ()
-               | None ->
-                   let clubUser = dbCtx.Public.ClubUsers.Create()
-                   clubUser.ClubId <- clubId
-                   clubUser.UserId <- userId
-                   DbProvider.saveDatabase dbCtx
-                   |> Async.RunSynchronously
-                   ()
+        return
+            match exists with
+            | Some _ -> ()
+            | None ->
+                let clubUser = dbCtx.Public.ClubUsers.Create()
+                clubUser.ClubId <- clubId
+                clubUser.UserId <- userId
+
+                DbProvider.saveDatabase dbCtx
+                |> Async.RunSynchronously
+
+                ()
     }
 
-let removeUserFromClub (dbCtx: DbProvider.Sql.dataContext) (userId: Guid) (clubId: Guid) =
+let removeUserFromClub
+    (dbCtx: DbProvider.Sql.dataContext)
+    (userId: Guid)
+    (clubId: Guid)
+    =
     async {
-        return query {
-                   for clubUser in dbCtx.Public.ClubUsers do
-                       where
-                           (clubUser.UserId = userId
-                            && clubUser.ClubId = clubId)
-               }
-               |> Seq.``delete all items from single table``
-               |> Async.RunSynchronously
+        return
+            query {
+                for clubUser in dbCtx.Public.ClubUsers do
+                    where (
+                        clubUser.UserId = userId
+                        && clubUser.ClubId = clubId
+                    )
+            }
+            |> Seq.``delete all items from single table``
+            |> Async.RunSynchronously
     }
 
 let createChannel (dbCtx: DbProvider.Sql.dataContext) (clubId: Guid) =
@@ -77,8 +104,10 @@ let createChannel (dbCtx: DbProvider.Sql.dataContext) (clubId: Guid) =
         let channel = dbCtx.Public.Channels.Create()
         channel.ClubId <- clubId
         channel.Name <- "general"
+
         DbProvider.saveDatabase dbCtx
         |> Async.RunSynchronously
+
         return ()
     }
 
@@ -121,17 +150,25 @@ let Post (next: HttpFunc) (ctx: HttpContext) =
 
         let userId = getUserId ctx
 
-        let! club = createClub dbCtx payload
+        let! optionExistsClub = findClubByName dbCtx (payload.name)
 
-        createChannel dbCtx club.Id
-        |> Async.RunSynchronously
-        |> ignore
+        return!
+            match optionExistsClub with
+            | Some _ -> setStatusCode HttpStatusCodes.Conflict next ctx
+            | None ->
+                task {
+                    let! club = createClub dbCtx payload
 
-        addUserToClub dbCtx userId club.Id
-        |> Async.RunSynchronously
-        |> ignore
+                    createChannel dbCtx club.Id
+                    |> Async.RunSynchronously
+                    |> ignore
 
-        return! setStatusCode HttpStatusCodes.Created next ctx
+                    addUserToClub dbCtx userId club.Id
+                    |> Async.RunSynchronously
+                    |> ignore
+
+                    return! setStatusCode HttpStatusCodes.Created next ctx
+                }
     }
 
 let Get (next: HttpFunc) (ctx: HttpContext) =
@@ -145,10 +182,12 @@ let Get (next: HttpFunc) (ctx: HttpContext) =
                 for clubUser in dbCtx.Public.ClubUsers do
                     for club in clubUser.``public.Clubs by Id`` do
                         where (clubUser.UserId = userId)
-                        select
-                            ({ id = club.Id
-                               name = club.Name
-                               isPublic = club.IsPublic })
+
+                        select (
+                            { Id = club.Id
+                              Name = club.Name
+                              IsPublic = club.IsPublic }
+                        )
             }
             |> Seq.toList
 
@@ -171,11 +210,17 @@ let GetOthers (next: HttpFunc) (ctx: HttpContext) =
         let clubs =
             query {
                 for club in dbCtx.Public.Clubs do
-                    where (club.Id |<>| userClubs && club.IsPublic)
-                    select
-                        ({ id = club.Id
-                           name = club.Name
-                           isPublic = club.IsPublic })
+                    where (
+                        club.Id
+                        |<>| userClubs
+                        && club.IsPublic
+                    )
+
+                    select (
+                        { Id = club.Id
+                          Name = club.Name
+                          IsPublic = club.IsPublic }
+                    )
             }
             |> Seq.toList
 
@@ -191,7 +236,7 @@ let GetMembers clubId (next: HttpFunc) (ctx: HttpContext) =
                 for clubUser in dbCtx.Public.ClubUsers do
                     for user in clubUser.``public.Users by Id`` do
                         where (clubUser.ClubId = clubId)
-                        select { displayName = user.DisplayName }
+                        select { DisplayName = user.DisplayName }
             }
             |> Seq.toList
 
@@ -201,16 +246,16 @@ let GetMembers clubId (next: HttpFunc) (ctx: HttpContext) =
 let HandleMeta (next: HttpFunc) (ctx: HttpContext) =
     task {
         let result =
-            [| { id = Guid.NewGuid()
-                 name = "ClubName"
-                 isPublic = true } |]
+            [| { Id = Guid.NewGuid()
+                 Name = "ClubName"
+                 IsPublic = true } |]
 
         return! json result next ctx
     }
 
 let HandleMetaMembers (next: HttpFunc) (ctx: HttpContext) =
     task {
-        let result = [| { displayName = "abc@xyz.com" } |]
+        let result = [| { DisplayName = "abc@xyz.com" } |]
 
         return! json result next ctx
     }

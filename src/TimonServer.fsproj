@@ -25,7 +25,7 @@
     <PackageReference Include="Npgsql" Version="5.0.3" />
     <PackageReference Include="OpenGraph-Net" Version="3.2.6" />
     <PackageReference Include="SQLProvider" Version="1.1.101" />
-    <PackageReference Include="Dapr.AspNetCore" Version="1.0.0-rc06" />
+    <PackageReference Include="Dapr.AspNetCore" Version="1.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Migrations\202008091339_InitialMigration.fs" />
@@ -36,17 +36,22 @@
     <Compile Include="Migrations\202009030115_AlterLinkTags.fs" />
     <Compile Include="Migrations\202009262231_CreateClubLinkTags.fs" />
     <Compile Include="Migrations\202011232241_AddClubFlagPrivate.fs" />
+    <Compile Include="Migrations\202102191318_CreateChannelFollowers.fs" />
+    <Compile Include="Migrations\202102191322_CreateChannelFollowings.fs" />
+    <Compile Include="Migrations\202102192220_AddClubNameUniqueConstraint.fs" />
+    <Compile Include="Migrations\202102192338_CreateChannelActivityPub.fs" />
     <Compile Include="DbProvider.fs" />
+    <Compile Include="ChannelRepository.fs" />
+    <Compile Include="ClubRepository.fs" />
+    <Compile Include="PasswordHelper.fs" />
     <Compile Include="BackgroundActor.fs" />
     <Compile Include="HandlerHelpers.fs" />
-    <Compile Include="LinkGetHandler.fs" />
-    <Compile Include="LinkPostHandler.fs" />
-    <Compile Include="ChannelPostHandler.fs" />
-    <Compile Include="ChannelGetHandler.fs" />
+    <Compile Include="LinkHandler.fs" />
+    <Compile Include="ChannelHandler.fs" />
     <Compile Include="UserPostHandler.fs" />
     <Compile Include="ClubHandler.fs" />
     <Compile Include="PubSubController.fs" />
-    <Compile Include="FunctionHandler.fs" />
+    <Compile Include="TimonStartup.fs" />
   </ItemGroup>
   <ItemGroup>
     <!-- <Content Include="appsettings.json">

@@ -15,7 +15,7 @@ open System.IO
 open HttpFunc
 open Fixtures
 open FSharp.Control.Tasks.V2.ContextInsensitive
-open Function
+open TimonStartup
 open FSharp.Data
 
 type GetResponseParameters = JsonProvider<"Response.json">
@@ -55,7 +55,7 @@ let ``POST / should save link`` () =
 //        setup()
 //        use server = new TestServer(createHost ())
 //        use client = server.CreateClient()
-//        
+//
 //        let a = JwtSecurityToken("https://localhost:5001", "timon")
 //
 //        use content =
@@ -63,14 +63,14 @@ let ``POST / should save link`` () =
 //
 //        let! response = post client "/" content
 //        let! jsonText = response |> ensureSuccess |> readText
-//        
+//
 //        let json = ResponseParameters.Parse(jsonText)
-//        
+//
 //        teardown()
 //
 //        shouldEqualStatusCode System.Net.HttpStatusCode.Created response.StatusCode
 //    }
-    
+
 
 [<Fact>]
 let ``GET / should return link`` () =
@@ -82,10 +82,10 @@ let ``GET / should return link`` () =
 //
 //        let! response = get client "/"
 //        let! jsonText = response |> ensureSuccess |> readText
-//        
+//
 //        let json = ResponseParameters.Parse(jsonText)
 //
 //        teardown()
-//        
+//
 //        shouldEqualInt json.Length 1
 //    }

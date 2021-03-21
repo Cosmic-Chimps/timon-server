@@ -17,6 +17,8 @@ type Sql =
 type User = Sql.dataContext.``public.UsersEntity``
 type Club = Sql.dataContext.``public.ClubsEntity``
 type Channel = Sql.dataContext.``public.ChannelsEntity``
+type ChannelFollowers = Sql.dataContext.``public.ChannelFollowersEntity``
+type ChannelFollowings = Sql.dataContext.``public.ChannelFollowingsEntity``
 
 let saveDatabase (dbCtx: Sql.dataContext) =
     async {
