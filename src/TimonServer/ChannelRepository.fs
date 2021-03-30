@@ -74,3 +74,46 @@ let findChannelByChannelId
             }
             |> Seq.headAsync
     }
+
+let findChannelByActivityPubId
+    (dbCtx: DbProvider.Sql.dataContext)
+    (activityPubId: string)
+    =
+    async {
+        return!
+            query {
+                for channel in dbCtx.Public.ChannelActivityPub do
+                    where (channel.ActivityPubId = activityPubId)
+            }
+            |> Seq.tryHeadAsync
+    }
+
+let findChannelFollowerByActivityPubIdAndFollowerId
+    (dbCtx: DbProvider.Sql.dataContext)
+    (channelId: Guid)
+    (followerId: string)
+    =
+    async {
+        return!
+            query {
+                for x in dbCtx.Public.ChannelFollowers do
+                    where (
+                        x.ChannelId = channelId
+                        && x.ActivityPubId = followerId
+                    )
+            }
+            |> Seq.tryHeadAsync
+    }
+
+let findAllChannelFollowers
+    (dbCtx: DbProvider.Sql.dataContext)
+    (channelId: Guid)
+    =
+    async {
+        return!
+            query {
+                for x in dbCtx.Public.ChannelFollowers do
+                    where (x.ChannelId = channelId)
+            }
+            |> Seq.executeQueryAsync
+    }

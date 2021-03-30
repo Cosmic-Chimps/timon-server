@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TimonServer", "src\TimonServer.fsproj", "{FFF9C817-DE95-473F-BAFD-4B20B595C116}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TimonServer", "src\TimonServer\TimonServer.fsproj", "{FFF9C817-DE95-473F-BAFD-4B20B595C116}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TimonServerTests", "tests\TimonServerTests.fsproj", "{B471C6D2-F9BE-4A66-8FF9-2A7FB20D6602}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TimonMigrations", "src\TimonMigrations\TimonMigrations.fsproj", "{4F49076D-972D-422A-9913-23880C9F180D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,5 +46,20 @@ Global
 		{B471C6D2-F9BE-4A66-8FF9-2A7FB20D6602}.Release|x64.Build.0 = Release|Any CPU
 		{B471C6D2-F9BE-4A66-8FF9-2A7FB20D6602}.Release|x86.ActiveCfg = Release|Any CPU
 		{B471C6D2-F9BE-4A66-8FF9-2A7FB20D6602}.Release|x86.Build.0 = Release|Any CPU
+		{4F49076D-972D-422A-9913-23880C9F180D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F49076D-972D-422A-9913-23880C9F180D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F49076D-972D-422A-9913-23880C9F180D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4F49076D-972D-422A-9913-23880C9F180D}.Debug|x64.Build.0 = Debug|Any CPU
+		{4F49076D-972D-422A-9913-23880C9F180D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4F49076D-972D-422A-9913-23880C9F180D}.Debug|x86.Build.0 = Debug|Any CPU
+		{4F49076D-972D-422A-9913-23880C9F180D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F49076D-972D-422A-9913-23880C9F180D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F49076D-972D-422A-9913-23880C9F180D}.Release|x64.ActiveCfg = Release|Any CPU
+		{4F49076D-972D-422A-9913-23880C9F180D}.Release|x64.Build.0 = Release|Any CPU
+		{4F49076D-972D-422A-9913-23880C9F180D}.Release|x86.ActiveCfg = Release|Any CPU
+		{4F49076D-972D-422A-9913-23880C9F180D}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{4F49076D-972D-422A-9913-23880C9F180D} = {43A452A7-0082-4AED-BA01-51993FCA14E0}
 	EndGlobalSection
 EndGlobal

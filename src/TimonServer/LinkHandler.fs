@@ -13,6 +13,7 @@ open FSharp.Data.Sql.Runtime
 open OpenGraphNet
 open Links.BackgroundActor
 open System.Net
+open LinkRepository
 
 type Link =
     { Id: Guid
@@ -731,15 +732,7 @@ let getOrCreateLink
         DbProvider.saveDatabase dbCtx
         |> Async.RunSynchronously
 
-        processor.Post(
-            UpdateTags(
-                dbCtx
-                    .CreateConnection()
-                    .ConnectionString,
-                tags',
-                dbLink.Id
-            )
-        )
+        processor.Post(UpdateTags(dbCtx, tags', dbLink.Id))
 
         return dbLink
     }
@@ -853,7 +846,14 @@ let findChannelLinkByIds
         return channelLinkOption
     }
 
-let internalCreateLink dbCtx payload userId channelId clubId =
+let internalCreateLink
+    (ctx: HttpContext)
+    dbCtx
+    payload
+    userId
+    channelId
+    clubId
+    =
     async {
         let! link = getOrCreateLink dbCtx payload.url payload.tagName
 
@@ -861,12 +861,16 @@ let internalCreateLink dbCtx payload userId channelId clubId =
             { channel = "#general"
               url = payload.url }
 
-        processor.Post(PostSlack(postSlackTo))
+        let daprClient = ctx.GetService<Dapr.Client.DaprClient>()
+
+        processor.Post(PostSlack(daprClient, postSlackTo))
+
+        postLinkToActivityPub ctx link channelId
+        |> ignore
 
         let! channelId = getChannelId dbCtx channelId clubId
 
         let! channelLinkOption = findChannelLinkByIds dbCtx link.Id channelId
-
 
         match channelLinkOption with
         | Some _ -> ignore ()
@@ -890,7 +894,7 @@ let CreateLink (clubId: Guid) (paramsChannelId: Guid) : HttpHandler =
 
             let! payload = ctx.BindJsonAsync<PostLinkPayload>()
 
-            internalCreateLink dbCtx payload userId paramsChannelId clubId
+            internalCreateLink ctx dbCtx payload userId paramsChannelId clubId
             |> Async.RunSynchronously
 
             return! setStatusCode HttpStatusCodes.Created next ctx
@@ -914,29 +918,13 @@ let HandleTag (clubId: Guid) (linkId: Guid) : HttpHandler =
                 | "" -> setStatusCode HttpStatusCodes.Created next ctx
                 | _ ->
                     let dbTags =
-                        query {
-                            for clubLinkTag in dbCtx.Public.ClubLinkTags do
-                                where (
-                                    clubLinkTag.ClubId = clubId
-                                    && clubLinkTag.LinkId = linkId
-                                )
-
-                                select clubLinkTag.TagName
-                        }
+                        getClubLinkTags clubId linkId dbCtx
                         |> String.concat ","
-                    // findLinkById dbCtx linkId |> Async.RunSynchronously
 
                     let allTags = sprintf "%s,%s" dbTags sanitizedTags
 
                     processor.Post(
-                        UpdateClubTags(
-                            dbCtx
-                                .CreateConnection()
-                                .ConnectionString,
-                            allTags,
-                            clubId,
-                            linkId
-                        )
+                        UpdateClubTags(dbCtx, allTags, clubId, linkId)
                     )
 
                     // DbProvider.saveDatabase dbCtx
@@ -954,15 +942,7 @@ let HandleDeleteTagFromLink
             let dbCtx = getDbCtx ctx
 
             let dbTags =
-                query {
-                    for clubLinkTag in dbCtx.Public.ClubLinkTags do
-                        where (
-                            clubLinkTag.ClubId = clubId
-                            && clubLinkTag.LinkId = linkId
-                        )
-
-                        select clubLinkTag.TagName
-                }
+                getClubLinkTags clubId linkId dbCtx
                 |> String.concat ","
 
             let newTags =
@@ -973,16 +953,7 @@ let HandleDeleteTagFromLink
             DbProvider.saveDatabase dbCtx
             |> Async.RunSynchronously
 
-            processor.Post(
-                UpdateClubTags(
-                    dbCtx
-                        .CreateConnection()
-                        .ConnectionString,
-                    newTags,
-                    clubId,
-                    linkId
-                )
-            )
+            processor.Post(UpdateClubTags(dbCtx, newTags, clubId, linkId))
 
             return! setStatusCode HttpStatusCodes.OK next ctx
         }

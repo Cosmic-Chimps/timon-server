@@ -5,13 +5,20 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Launch Chrome",
+      "request": "launch",
+      "type": "pwa-chrome",
+      "url": "http://localhost:8080",
+      "webRoot": "${workspaceFolder}"
+    },
+    {
       "name": ".NET Core Launch (console)",
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
-      "program": "${workspaceFolder}/src/bin/Debug/net5.0/TimonServer.dll",
+      "program": "${workspaceFolder}/src/TimonServer/bin/Debug/net5.0/TimonServer.dll",
       "args": [],
-      "cwd": "${workspaceFolder}/src",
+      "cwd": "${workspaceFolder}/src/TimonServer",
       "console": "internalConsole",
       "stopAtEntry": false
     },
@@ -26,7 +33,7 @@
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "daprd-debug",
-      "program": "${workspaceFolder}/src/bin/Debug/net5.0/TimonServer.dll",
+      "program": "${workspaceFolder}/src/TimonServer/bin/Debug/net5.0/TimonServer.dll",
       "args": [],
       "cwd": "${workspaceFolder}/src",
       "console": "internalConsole",

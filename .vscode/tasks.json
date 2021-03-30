@@ -7,7 +7,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/src/TimonServer.fsproj",
+                "${workspaceFolder}/src/TimonServer/TimonServer.fsproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -19,7 +19,7 @@
             "type": "process",
             "args": [
                 "publish",
-                "${workspaceFolder}/src/TimonServer.fsproj",
+                "${workspaceFolder}/src/TimonServer/TimonServer.fsproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -32,7 +32,7 @@
             "args": [
                 "watch",
                 "run",
-                "${workspaceFolder}/src/TimonServer.fsproj",
+                "${workspaceFolder}/src/TimonServer/TimonServer.fsproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -44,7 +44,7 @@
             "label": "daprd-debug",
             "type": "daprd",
             "dependsOn": "build",
-            "componentsPath": "./src/components",
+            "componentsPath": "./src/TimonServer/components",
             "enableMetrics": false,
             "grpcPort": 50004,
             "httpPort": 3502

@@ -14,12 +14,19 @@ open Handlers.LinkHandler
 open FSharp.Data.Sql
 open FSharp.Data
 open FSharp.Data.Sql.Runtime
+open ChannelRepository
+open Handlers.Helpers
+open DbProvider
 
 [<CLIMutable>]
 type AddNoteToTimonMessage =
     { Content: string
       ActivityPubChannelId: string }
 
+[<CLIMutable>]
+type UserFollowChannelMessage =
+    { FollowerId: string
+      ActivityPubChannelId: string }
 
 [<ApiController>]
 [<Route("pubsub")>]
@@ -29,6 +36,32 @@ type PubSubController
         daprClient: Dapr.Client.DaprClient
     ) =
     inherit ControllerBase()
+
+    let createChannelFollower
+        (dbCtx: DbProvider.Sql.dataContext)
+        (message: UserFollowChannelMessage)
+        (cp: ChannelActivityPub)
+        =
+        let opChannelFollower =
+            findChannelFollowerByActivityPubIdAndFollowerId
+                dbCtx
+                cp.ChannelId
+                message.FollowerId
+            |> Async.RunSynchronously
+
+        match opChannelFollower with
+        | Some _ -> None //this.BadRequest() :> IActionResult
+        | None ->
+            let channelFollower = dbCtx.Public.ChannelFollowers.Create()
+
+            channelFollower.ChannelId <- cp.ChannelId
+            channelFollower.ActivityPubId <- message.FollowerId
+
+            DbProvider.saveDatabase dbCtx
+            |> Async.RunSynchronously
+
+            Some true // this.Ok() :> IActionResult
+
 
     [<HttpPost("add")>]
     [<Topic("messagebus", "add-note-to-timon")>]
@@ -66,7 +99,30 @@ type PubSubController
             |> Seq.toArray
             |> Seq.iter
                 (fun channelId ->
-                    internalCreateLink dbCtx payload userId channelId Guid.Empty
+                    internalCreateLink
+                        this.HttpContext
+                        dbCtx
+                        payload
+                        userId
+                        channelId
+                        Guid.Empty
                     |> Async.RunSynchronously)
 
         this.Ok() :> IActionResult
+
+    [<Topic("messagebus", "user-follow-channel")>]
+    member this.UserFollowChannel
+        (message: UserFollowChannelMessage)
+        : Async<IActionResult> =
+        async {
+            let dbCtx = getDbCtx this.HttpContext
+
+            return
+                findChannelByActivityPubId dbCtx message.ActivityPubChannelId
+                |> Async.RunSynchronously
+                |> lift (createChannelFollower dbCtx message)
+                |> fun res ->
+                    match res with
+                    | None -> this.BadRequest() :> IActionResult
+                    | Some _ -> this.Ok() :> IActionResult
+        }

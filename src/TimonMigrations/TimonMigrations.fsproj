@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentMigrator" Version="3.2.11" />
+    <PackageReference Include="FluentMigrator.Runner" Version="3.2.11" />
+    <PackageReference Include="FluentMigrator.Runner.Postgres" Version="3.2.11" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0"/>
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="5.0.0"/>
+  </ItemGroup>
+
+  <ItemGroup>
+  <Compile Include="Migrations\202008091339_InitialMigration.fs" />
+    <Compile Include="Migrations\202008092104_AddEmailToUser.fs" />
+    <Compile Include="Migrations\202008271402_CreateTableTags.fs" />
+    <Compile Include="Migrations\202009012226_AddColumnTagToLink.fs" />
+    <Compile Include="Migrations\202009012352_AlterColumnTagCount.fs" />
+    <Compile Include="Migrations\202009030115_AlterLinkTags.fs" />
+    <Compile Include="Migrations\202009262231_CreateClubLinkTags.fs" />
+    <Compile Include="Migrations\202011232241_AddClubFlagPrivate.fs" />
+    <Compile Include="Migrations\202102191318_CreateChannelFollowers.fs" />
+    <Compile Include="Migrations\202102191322_CreateChannelFollowings.fs" />
+    <Compile Include="Migrations\202102192220_AddClubNameUniqueConstraint.fs" />
+    <Compile Include="Migrations\202102192338_CreateChannelActivityPub.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+</Project>

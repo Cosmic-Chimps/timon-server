@@ -2,7 +2,6 @@ module TimonStartup
 
 open System
 open FSharp.Data
-open FluentMigrator.Runner
 open Giraffe
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Configuration
@@ -14,7 +13,6 @@ open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Handlers
-open Links.Migrations
 open Handlers.Helpers
 open System.Threading.Tasks
 
@@ -266,37 +264,8 @@ let configureServices (services: IServiceCollection) =
         .AddDapr()
     |> ignore
 
-    let configureRunner (rb: IMigrationRunnerBuilder) =
-        rb
-            .AddPostgres()
-            // Set the connection string
-            .WithGlobalConnectionString(
-                Configuration.["TimonDatabase"]
-            )
-            // Define the assembly containing the migrations
-            .ScanIn(
-                typeof<InitialMigration>
-                    .Assembly
-            )
-            .For.Migrations()
-        |> ignore
-
-    services
-        .AddFluentMigratorCore()
-        .ConfigureRunner(Action<IMigrationRunnerBuilder> configureRunner)
-    |> ignore
-
     services.AddDataProtection()
     |> ignore
-
-
-    let serviceProvider = services.BuildServiceProvider()
-
-    let migrationRunner =
-        serviceProvider.GetService(typeof<IMigrationRunner>)
-        :?> IMigrationRunner
-
-    migrationRunner.MigrateUp()
 
 
 // #if DEBUG

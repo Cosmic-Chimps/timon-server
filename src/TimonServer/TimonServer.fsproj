@@ -14,9 +14,6 @@
     <PackageReference Include="SchlenkR.FsHttp" Version="5.0.0" />
     <PackageReference Include="System.Runtime" Version="4.3.1" Force="true" />
     <PackageReference Include="Dapper.FSharp" Version="1.15.0" />
-    <PackageReference Include="FluentMigrator" Version="3.2.11" />
-    <PackageReference Include="FluentMigrator.Runner" Version="3.2.11" />
-    <PackageReference Include="FluentMigrator.Runner.Postgres" Version="3.2.11" />
     <PackageReference Include="FSharp.Data" Version="3.3.3" />
     <PackageReference Include="Giraffe" Version="4.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.3" />
@@ -28,24 +25,13 @@
     <PackageReference Include="Dapr.AspNetCore" Version="1.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Migrations\202008091339_InitialMigration.fs" />
-    <Compile Include="Migrations\202008092104_AddEmailToUser.fs" />
-    <Compile Include="Migrations\202008271402_CreateTableTags.fs" />
-    <Compile Include="Migrations\202009012226_AddColumnTagToLink.fs" />
-    <Compile Include="Migrations\202009012352_AlterColumnTagCount.fs" />
-    <Compile Include="Migrations\202009030115_AlterLinkTags.fs" />
-    <Compile Include="Migrations\202009262231_CreateClubLinkTags.fs" />
-    <Compile Include="Migrations\202011232241_AddClubFlagPrivate.fs" />
-    <Compile Include="Migrations\202102191318_CreateChannelFollowers.fs" />
-    <Compile Include="Migrations\202102191322_CreateChannelFollowings.fs" />
-    <Compile Include="Migrations\202102192220_AddClubNameUniqueConstraint.fs" />
-    <Compile Include="Migrations\202102192338_CreateChannelActivityPub.fs" />
     <Compile Include="DbProvider.fs" />
     <Compile Include="ChannelRepository.fs" />
+    <Compile Include="LinkRepository.fs" />
     <Compile Include="ClubRepository.fs" />
     <Compile Include="PasswordHelper.fs" />
-    <Compile Include="BackgroundActor.fs" />
     <Compile Include="HandlerHelpers.fs" />
+    <Compile Include="BackgroundActor.fs" />
     <Compile Include="LinkHandler.fs" />
     <Compile Include="ChannelHandler.fs" />
     <Compile Include="UserPostHandler.fs" />
