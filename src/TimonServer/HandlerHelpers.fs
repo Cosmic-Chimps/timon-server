@@ -22,7 +22,10 @@ let lift f x =
 
 let getDbCtx (ctx: HttpContext) =
     ctx.GetService<IConfiguration>()
-    |> (fun s -> s.["TimonDatabase"])
+    |> (fun config ->
+        match config.["CONNECTION_STRING"] with
+        | null -> config.["TimonDatabase"]
+        | _ -> config.["CONNECTION_STRING"])
     |> DbProvider.Sql.GetDataContext
 
 let getUserId (ctx: HttpContext) =

@@ -4,9 +4,65 @@ open FluentMigrator.Runner.Initialization
 open Microsoft.Extensions.Configuration
 open TimonMigrations.Migrations
 open Microsoft.Extensions.DependencyInjection
+open Npgsql
 
 let env =
     Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+
+let ensureDbExists (connectionString: string) =
+    let connectionString' =
+        connectionString.Replace("Database=timon", "Database=postgres")
+
+    use conn = new NpgsqlConnection(connectionString')
+
+    use command =
+        new NpgsqlCommand(
+            $"SELECT DATNAME FROM pg_catalog.pg_database WHERE DATNAME = 'timon'",
+            conn
+        )
+
+    conn.Open()
+    |> ignore
+
+    let i = command.ExecuteScalar()
+
+    if
+        i <> null
+        && i.ToString().Equals("timon")
+    then
+        conn.Close()
+        ()
+    else
+        use commandCreateDb =
+            new NpgsqlCommand(
+                $"CREATE DATABASE \"timon\" WITH OWNER = postgres ENCODING = 'UTF8' CONNECTION LIMIT = -1;",
+                conn
+            )
+
+        commandCreateDb.ExecuteNonQuery()
+        |> ignore
+
+        conn.Close()
+
+        use conn2 = new NpgsqlConnection(connectionString)
+
+        use commandCreateUidExtension =
+            new NpgsqlCommand(
+                $"CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"",
+                conn2
+            )
+
+        conn2.Open()
+        |> ignore
+
+        commandCreateUidExtension.ExecuteNonQuery()
+        |> ignore
+
+        conn2.Close()
+        |> ignore
+
+        ()
+
 
 let builder =
     ConfigurationBuilder()
@@ -18,10 +74,14 @@ let config = builder.Build()
 
 let configureRunner (rb: IMigrationRunnerBuilder) =
     // Configuration.GetValue<string>("CONNECTION_STRING")
+    printfn "%s" config.["CONNECTION_STRING"]
+
     let connectionString =
         match config.["CONNECTION_STRING"] with
         | null -> config.["TimonDatabase"]
         | _ -> config.["CONNECTION_STRING"]
+
+    ensureDbExists (connectionString)
 
     rb
         .AddPostgres()

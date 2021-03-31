@@ -20,7 +20,7 @@ type CreateChannelFollowings() =
         this
             .Create
             .PrimaryKey("CreateChannelFollowings_Composite")
-            .OnTable("CreateChannelFollowings")
+            .OnTable("ChannelFollowings")
             .Columns("ChannelId", "ActivityPubId")
         |> ignore
 

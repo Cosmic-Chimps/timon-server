@@ -7,7 +7,8 @@ open FSharp.Data.Sql
 let connectionString =
     "Host=localhost;Port=5432;Username=postgres;Password=postgres;Database=timon"
 // #else
-// let [<Literal>] connectionString = "Host=host.docker.internal;Port=5432;Username=postgres;Password=postgres;Database=timon"
+// [<Literal>]
+// let connectionString = "CONNE"
 // #endif
 
 type Sql =
