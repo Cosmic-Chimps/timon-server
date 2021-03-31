@@ -225,6 +225,9 @@ let configureApp (app: IApplicationBuilder) =
             |> ignore
 
             endpoints.MapControllers()
+            |> ignore
+
+            endpoints.MapHealthChecks("/health")
             |> ignore)
     |> ignore
 
@@ -257,6 +260,9 @@ let configureServices (services: IServiceCollection) =
         .AddGiraffe()
         .AddAuthentication(authenticationOptions)
         .AddJwtBearer(Action<JwtBearerOptions> jwtBearerOptions)
+    |> ignore
+
+    services.AddHealthChecks()
     |> ignore
 
     services
