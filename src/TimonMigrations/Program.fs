@@ -6,9 +6,6 @@ open TimonMigrations.Migrations
 open Microsoft.Extensions.DependencyInjection
 open Npgsql
 
-let env =
-    Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
-
 let ensureDbExists (connectionString: string) =
     let connectionString' =
         connectionString.Replace("Database=timon", "Database=postgres")
@@ -64,23 +61,26 @@ let ensureDbExists (connectionString: string) =
         ()
 
 
-let builder =
-    ConfigurationBuilder()
-        .AddJsonFile($"appsettings.json", true, true)
-        .AddJsonFile($"appsettings.{env}.json", true, true)
-        .AddEnvironmentVariables()
-
-let config = builder.Build()
-
 let configureRunner (rb: IMigrationRunnerBuilder) =
-    // Configuration.GetValue<string>("CONNECTION_STRING")
-    printfn "%s" config.["CONNECTION_STRING"]
+    let env =
+        Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+
+    let builder =
+        ConfigurationBuilder()
+            .AddJsonFile($"appsettings.json", false, true)
+            .AddJsonFile($"appsettings.{env}.json", true, true)
+            .AddEnvironmentVariables()
+
+    let config = builder.Build()
 
     let connectionString =
         match config.["CONNECTION_STRING"] with
         | null -> config.["TimonDatabase"]
         | _ -> config.["CONNECTION_STRING"]
 
+    printfn "%s" config.["CONNECTION_STRING"]
+    printfn "%s" connectionString
+    printfn "%s" config.["TimonDatabase"]
     ensureDbExists (connectionString)
 
     rb
