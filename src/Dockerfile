@@ -42,8 +42,8 @@ RUN chmod 777 .MyCertificate.pfx
 RUN chmod +x run.sh
 
 ENV ASPNETCORE_ENVIRONMENT=Production
-ENV ASPNETCORE_URLS="http://*:8080"
-EXPOSE 8080
+ENV ASPNETCORE_URLS="http://*:8081"
+EXPOSE 8081
 
 RUN addgroup --gid 998 --system appgroup \
     && adduser --uid 1004 --system appuser --ingroup appgroup
