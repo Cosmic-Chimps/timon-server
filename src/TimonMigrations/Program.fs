@@ -78,9 +78,6 @@ let configureRunner (rb: IMigrationRunnerBuilder) =
         | null -> config.["TimonDatabase"]
         | _ -> config.["CONNECTION_STRING"]
 
-    printfn "%s" config.["CONNECTION_STRING"]
-    printfn "%s" connectionString
-    printfn "%s" config.["TimonDatabase"]
     ensureDbExists (connectionString)
 
     rb
