@@ -13,7 +13,7 @@ FROM build_migrations AS publish_migrate
 RUN dotnet publish "TimonMigrations/TimonMigrations.fsproj" -c Release -o /app/publish
 
 FROM base AS final_migrate
-WORKDIR /app
+WORKDIR /app/migrations
 COPY --from=publish_migrate /app/publish .
 
 RUN dotnet TimonMigrations.dll
@@ -31,7 +31,7 @@ FROM build AS publish
 RUN dotnet publish "TimonServer/TimonServer.fsproj" -c Release -o /app/publish
 
 
-FROM base AS final
+FROM final_migrate AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
@@ -39,6 +39,7 @@ RUN cp .MyCertificate.crt /usr/local/share/ca-certificates
 RUN update-ca-certificates
 
 RUN chmod 777 .MyCertificate.pfx
+RUN chmod +x run.sh
 
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV ASPNETCORE_URLS="http://*:8080"
@@ -49,4 +50,4 @@ RUN addgroup --gid 998 --system appgroup \
 
 USER appuser
 
-ENTRYPOINT ["dotnet", "TimonServer.dll"]
+ENTRYPOINT ["./run.sh"]

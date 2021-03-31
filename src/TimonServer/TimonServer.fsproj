@@ -49,7 +49,7 @@
     <Content Include="appsettings.Staging.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content> -->
-    <Content Include="localhost2.crt">
+    <Content Include="run.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
