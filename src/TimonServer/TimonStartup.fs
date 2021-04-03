@@ -145,6 +145,7 @@ let routes : HttpHandler =
                                                 POST
                                                 >=> route "/follow"
                                                 >=> ChannelHandler.PostFollow
+                                                        clubId
                                                         channelId
                                                 POST
                                                 >=> route "/activity-pub-id"

@@ -13,7 +13,6 @@ open Microsoft.AspNetCore.DataProtection
 open Password
 open System.Collections.Generic
 open System.Text.Json
-open ChannelRepository
 
 let lift f x =
     match x with
@@ -343,65 +342,74 @@ type PostActivityPubOutbox =
       To: string array }
 
 
-let postLinkToActivityPub (ctx: HttpContext) (link: Link) (channelId: Guid) =
+let postLinkToActivityPub
+    (ctx: HttpContext)
+    (link: Link)
+    (clubId: Guid)
+    (channelId: Guid)
+    =
     let dbCtx = getDbCtx ctx
 
-    let channel =
-        getChannel dbCtx channelId
+    let opChannel =
+        ChannelRepository.getChannelOrDefault dbCtx clubId channelId
         |> Async.RunSynchronously
 
-    let opChannelActivityPub = getChannelActivityPub dbCtx channelId
-
-    // let tokenResponse = getChannelActivityPubToken ctx channel
-
-    // let channelActivityPub = getChannelActivityPub dbCtx channel.Id
-
-    match opChannelActivityPub with
+    match opChannel with
     | None -> None
-    | Some channelActivityPub ->
+    | Some channel ->
+        let opChannelActivityPub = getChannelActivityPub dbCtx channelId
 
-        let opTokenResponse = getChannelActivityPubToken ctx channel
+        // let tokenResponse = getChannelActivityPubToken ctx channel
 
-        match opTokenResponse with
+        // let channelActivityPub = getChannelActivityPub dbCtx channel.Id
+
+        match opChannelActivityPub with
         | None -> None
-        | Some tokenResponse ->
-            let daprClient = ctx.GetService<Dapr.Client.DaprClient>()
+        | Some channelActivityPub ->
 
-            let activityPubHost =
-                channelActivityPub.ActivityPubId.IndexOf("users")
-                |> fun x -> channelActivityPub.ActivityPubId.Substring(0, x - 1)
+            let opTokenResponse = getChannelActivityPubToken ctx channel
 
-            let activityPubPayload =
-                { Context =
-                      [| "https://www.w3.org/ns/activitystreams"
-                         $"{activityPubHost}/render/context" |]
-                  Type = [| "Note" |]
-                  Name = [| link.Url |]
-                  Content = [| link.Url |]
-                  To = [| $"{channelActivityPub.ActivityPubId}/followers" |] }
+            match opTokenResponse with
+            | None -> None
+            | Some tokenResponse ->
+                let daprClient = ctx.GetService<Dapr.Client.DaprClient>()
 
-            let requestProxy =
-                daprClient.CreateInvokeMethodRequest<PostActivityPubOutbox>(
-                    "timon-activity-pub",
-                    $"users/{channelActivityPub.Username}/outbox",
-                    activityPubPayload
+                let activityPubHost =
+                    channelActivityPub.ActivityPubId.IndexOf("users")
+                    |> fun x ->
+                        channelActivityPub.ActivityPubId.Substring(0, x - 1)
+
+                let activityPubPayload =
+                    { Context =
+                          [| "https://www.w3.org/ns/activitystreams"
+                             $"{activityPubHost}/render/context" |]
+                      Type = [| "Note" |]
+                      Name = [| link.Url |]
+                      Content = [| link.Url |]
+                      To = [| $"{channelActivityPub.ActivityPubId}/followers" |] }
+
+                let requestProxy =
+                    daprClient.CreateInvokeMethodRequest<PostActivityPubOutbox>(
+                        "timon-activity-pub",
+                        $"users/{channelActivityPub.Username}/outbox",
+                        activityPubPayload
+                    )
+
+                requestProxy.Headers.Add(
+                    "Accept",
+                    "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\", application/activity+json"
                 )
+                |> ignore
 
-            requestProxy.Headers.Add(
-                "Accept",
-                "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\", application/activity+json"
-            )
-            |> ignore
+                requestProxy.Headers.Add(
+                    "Authorization",
+                    $"Bearer {tokenResponse.Token}"
+                )
+                |> ignore
 
-            requestProxy.Headers.Add(
-                "Authorization",
-                $"Bearer {tokenResponse.Token}"
-            )
-            |> ignore
+                let resp =
+                    daprClient.InvokeMethodWithResponseAsync(requestProxy)
+                    |> Async.AwaitTask
+                    |> Async.RunSynchronously
 
-            let resp =
-                daprClient.InvokeMethodWithResponseAsync(requestProxy)
-                |> Async.AwaitTask
-                |> Async.RunSynchronously
-
-            Some resp.IsSuccessStatusCode
+                Some resp.IsSuccessStatusCode

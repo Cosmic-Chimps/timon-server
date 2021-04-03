@@ -4,6 +4,20 @@ open DbProvider
 open FSharp.Data.Sql
 open System
 
+let findChannelByName (dbCtx: DbProvider.Sql.dataContext) name clubId =
+    async {
+        return!
+            query {
+                for channel in dbCtx.Public.Channels do
+                    where (
+                        channel.Name = name
+                        && channel.ClubId = clubId
+                    )
+            }
+            |> Seq.tryHeadAsync
+    }
+
+
 let getChannel (dbCtx: Sql.dataContext) id =
     async {
         return!
@@ -11,9 +25,25 @@ let getChannel (dbCtx: Sql.dataContext) id =
                 for t in dbCtx.Public.Channels do
                     where (t.Id = id)
             }
-            |> Seq.headAsync
+            |> Seq.tryHeadAsync
     }
 
+let getChannelOrDefault (dbCtx: Sql.dataContext) clubId channelId =
+    async {
+        let! opChannel = getChannel dbCtx channelId
+
+        return
+            match opChannel with
+            | Some x -> Some x
+            | None ->
+                let channelByName =
+                    findChannelByName dbCtx "general" clubId
+                    |> Async.RunSynchronously
+
+                match channelByName with
+                | Some x -> Some x
+                | None -> None
+    }
 
 let findChannelFollowers (dbCtx: Sql.dataContext) channelId =
     async {

@@ -635,18 +635,6 @@ let findChannelById (dbCtx: DbProvider.Sql.dataContext) channelId clubId =
 
     }
 
-let findChannelByName (dbCtx: DbProvider.Sql.dataContext) name clubId =
-    async {
-        return!
-            query {
-                for channel in dbCtx.Public.Channels do
-                    where (
-                        channel.Name = name
-                        && channel.ClubId = clubId
-                    )
-            }
-            |> Seq.tryHeadAsync
-    }
 
 let getMetaDataValue (m: Metadata.StructuredMetadata) =
     m.Value
@@ -773,7 +761,12 @@ let getChannelId
             async {
                 match channelId with
                 | test when test = Guid.Empty ->
-                    let channelOption = findChannelByName dbCtx "general" clubId
+                    let channelOption =
+                        ChannelRepository.findChannelByName
+                            dbCtx
+                            "general"
+                            clubId
+
                     return! channelOption
                 | _ -> return None
             }
@@ -865,7 +858,7 @@ let internalCreateLink
 
         processor.Post(PostSlack(daprClient, postSlackTo))
 
-        postLinkToActivityPub ctx link channelId
+        postLinkToActivityPub ctx link clubId channelId
         |> ignore
 
         let! channelId = getChannelId dbCtx channelId clubId

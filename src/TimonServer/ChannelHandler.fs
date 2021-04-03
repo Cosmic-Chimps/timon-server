@@ -57,28 +57,35 @@ let GetChannelsMeta (next: HttpFunc) (ctx: HttpContext) =
 [<CLIMutable>]
 type CreateFollowerPayload = { ActivityPubId: string }
 
-let PostFollow (channelId: Guid) =
+let PostFollow (clubId: Guid) (channelId: Guid) =
     fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
             let dbCtx = getDbCtx ctx
 
-            let! payload = ctx.BindJsonAsync<CreateFollowerPayload>()
+            let! opChannel =
+                ChannelRepository.getChannelOrDefault dbCtx clubId channelId
 
-            let! channel = ChannelRepository.getChannel dbCtx channelId
-
-            match Helpers.followUser ctx channel (payload.ActivityPubId) with
-            | Some true ->
-                let channelFollowing = dbCtx.Public.ChannelFollowings.Create()
-                channelFollowing.ChannelId <- channelId
-                channelFollowing.ActivityPubId <- payload.ActivityPubId
-
-                DbProvider.saveDatabase dbCtx
-                |> Async.RunSynchronously
-
-                return! setStatusCode HttpStatusCodes.Created next ctx
-            | Some false ->
-                return! setStatusCode HttpStatusCodes.BadRequest next ctx
+            match opChannel with
             | None -> return! setStatusCode HttpStatusCodes.BadRequest next ctx
+            | Some channel ->
+                let! payload = ctx.BindJsonAsync<CreateFollowerPayload>()
+
+                match Helpers.followUser ctx channel (payload.ActivityPubId) with
+                | Some true ->
+                    let channelFollowing =
+                        dbCtx.Public.ChannelFollowings.Create()
+
+                    channelFollowing.ChannelId <- channelId
+                    channelFollowing.ActivityPubId <- payload.ActivityPubId
+
+                    DbProvider.saveDatabase dbCtx
+                    |> Async.RunSynchronously
+
+                    return! setStatusCode HttpStatusCodes.Created next ctx
+                | Some false ->
+                    return! setStatusCode HttpStatusCodes.BadRequest next ctx
+                | None ->
+                    return! setStatusCode HttpStatusCodes.BadRequest next ctx
         }
 
 let GetFollowers (channelId: Guid) =
