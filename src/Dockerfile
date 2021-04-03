@@ -35,10 +35,10 @@ FROM final_migrate AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
-RUN cp .MyCertificate.crt /usr/local/share/ca-certificates
+RUN cp timon-identity-server.crt /usr/local/share/ca-certificates
 RUN update-ca-certificates
 
-RUN chmod 777 .MyCertificate.pfx
+RUN chmod 777 timon-identity-server.pfx
 RUN chmod +x run.sh
 
 ENV ASPNETCORE_ENVIRONMENT=Production

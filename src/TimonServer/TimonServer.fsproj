@@ -52,10 +52,10 @@
     <Content Include="run.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include=".MyCertificate.crt">
+    <Content Include="timon-identity-server.crt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include=".MyCertificate.pfx">
+    <Content Include="timon-identity-server.pfx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
