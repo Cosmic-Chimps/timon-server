@@ -67,7 +67,7 @@ let PostFollow (channelId: Guid) =
             let! channel = ChannelRepository.getChannel dbCtx channelId
 
             match Helpers.followUser ctx channel (payload.ActivityPubId) with
-            | true ->
+            | Some true ->
                 let channelFollowing = dbCtx.Public.ChannelFollowings.Create()
                 channelFollowing.ChannelId <- channelId
                 channelFollowing.ActivityPubId <- payload.ActivityPubId
@@ -76,7 +76,9 @@ let PostFollow (channelId: Guid) =
                 |> Async.RunSynchronously
 
                 return! setStatusCode HttpStatusCodes.Created next ctx
-            | false -> return! setStatusCode HttpStatusCodes.BadRequest next ctx
+            | Some false ->
+                return! setStatusCode HttpStatusCodes.BadRequest next ctx
+            | None -> return! setStatusCode HttpStatusCodes.BadRequest next ctx
         }
 
 let GetFollowers (channelId: Guid) =
