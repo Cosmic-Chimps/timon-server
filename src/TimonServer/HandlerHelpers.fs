@@ -199,7 +199,6 @@ let getChannelActivityPub (dbCtx: DbProvider.Sql.dataContext) channelId =
     |> Seq.tryHead
 
 let getChannelActivityPubToken (ctx: HttpContext) (channel: Channel) =
-    let daprClient = ctx.GetService<Dapr.Client.DaprClient>()
 
     let dbCtx = getDbCtx ctx
 
@@ -208,6 +207,8 @@ let getChannelActivityPubToken (ctx: HttpContext) (channel: Channel) =
     match opChannelActivityPub with
     | None -> None
     | Some channelActivityPub ->
+        let daprClient = ctx.GetService<Dapr.Client.DaprClient>()
+
         let decryptedPassword =
             decryptPassword ctx channelActivityPub.Password
 
