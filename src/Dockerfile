@@ -45,9 +45,9 @@ ENV ASPNETCORE_ENVIRONMENT=Production
 ENV ASPNETCORE_URLS="http://*:8080"
 EXPOSE 8080
 
-# RUN addgroup --gid 998 --system appgroup \
-#     && adduser --uid 1004 --system appuser --ingroup appgroup
+RUN addgroup --gid 998 --system appgroup \
+    && adduser --uid 1004 --system appuser --ingroup appgroup
 
-# USER appuser
+USER appuser
 
 ENTRYPOINT ["./run.sh"]
